@@ -123,8 +123,8 @@ start() {
 	reenter="yes"
 	args="${args} --up-delay --up-restart"
 	args="${args} --script-security 2"
-	args="${args} --up /etc/openvpn/deluge-up.sh"
-	args="${args} --down-pre --down /etc/openvpn/deluge-down.sh"
+	args="${args} --up /etc/openvpn/transmission-up.sh"
+	args="${args} --down-pre --down /etc/openvpn/transmission-down.sh"
 
 	# Warn about the inability to change ip/route/dns information when
 	# dropping privs
