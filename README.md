@@ -41,11 +41,15 @@ To run the container use this command:
 ```
 $ docker run --privileged  -d \
               -v /your/storage/path/:/data \
+              -v /your/storage/path/:/config \
+              -v /your/storage/path/:/etc/openvpn \
               -v /etc/localtime:/etc/localtime:ro \
               -e "OPENVPN_PROVIDER=PIA" \
               -e "OPENVPN_CONFIG=Netherlands" \
               -e "OPENVPN_USERNAME=user" \
               -e "OPENVPN_PASSWORD=pass" \
+	      -e "PUID=1001" \
+	      -e "PGID=2001" \
               -p 9091:9091 \
               haugene/transmission-openvpn
 ```
@@ -106,24 +110,6 @@ You may set the following parameters to customize the user id that runs transmis
 |----------|----------|-------|
 |`PUID` | Sets the user id who will run transmission | `PUID=1003`|
 |`PGID` | Sets the group id for the transmission user | `PGID=1003` |
-
-#### Use docker env file
-Another way is to use a docker env file where you can easily store all your env variables and maintain multiple configurations for different providers.
-In the GitHub repository there is a provided DockerEnv file with all the current transmission and openvpn environment variables. You can use this to create local configurations
-by filling in the details and removing the # of the ones you want to use.
-
-Please note that if you pass in env. variables on the command line these will override the ones in the env file.
-
-See explanation of variables above.
-To use this env file, use the following to run the docker image:
-```
-$ docker run --privileged  -d \
-              -v /your/storage/path/:/data \
-              -v /etc/localtime:/etc/localtime:ro \
-              --env-file /your/docker/env/file \
-              -p 9091:9091 \
-              haugene/transmission-openvpn
-```
 
 ## Access the WebUI
 But what's going on? My http://my-host:9091 isn't responding?
@@ -233,64 +219,6 @@ nameserver 8.8.8.8
 nameserver 8.8.4.4
 ```
 - Save the file with [escape] + `:wq!`
-- Create your docker container with a classic command like `docker run --privileged -d -v /volume1/foldername/resolv.conf:/etc/resolv.conf -v /volume1/yourpath/:/data -e "OPENVPN_PROVIDER=PIA" -e "OPENVPN_CONFIG=Netherlands" -e "OPENVPN_USERNAME=XXXXX" -e "OPENVPN_PASSWORD=XXXXX" -p 9091:9091 --name "TransmissionVPN" haugene/transmission-openvpn`
+- Create your docker container with a classic command like `docker run --privileged -d -v /volume1/foldername/resolv.conf:/etc/resolv.conf -v /volume1/yourpath/:/config -v /volume1/yourpath/:/data -e "OPENVPN_PROVIDER=PIA" -e "OPENVPN_CONFIG=Netherlands" -e "OPENVPN_USERNAME=XXXXX" -e "OPENVPN_PASSWORD=XXXXX" -p 9091:9091 --name "TransmissionVPN" oskarirauta/alpine-transmission-openvpn`
 - To make it work after a nas restart, create an automated task in your synology web interface : go to **Settings Panel > Task Scheduler ** create a new task that run `/volume1/foldername/TUN.sh` as root (select '_root_' in 'user' selectbox). This task will start module that permit the container to run, you can make a task that run on startup. These kind of task doesn't work on my nas so I just made a task that run every minute.
 - Enjoy
-
-## systemd Integration
-
-On many modern linux systems, including Ubuntu, systemd can be used to start the transmission-openvpn at boot time, and restart it after any failure.
-
-Save the following as `/etc/systemd/system/transmission-openvpn.service`, and replace the OpenVPN PROVIDER/USERNAME/PASSWORD directives with your settings, and add any other directives that you're using.
-
-This service is assuming that there is a `bittorrent` user set up with a home directory at `/home/bittorrent/`. The data directory will be mounted at `/home/bittorrent/data/`. This can be changed to whichever user and location you're using.
-
-OpenVPN is set to exit if there is a connection failure. OpenVPN exiting triggers the container to also exit, then the `Restart=always` definition in the `transmission-openvpn.service` file tells systems to restart things again.
-
-```
-[Unit]
-Description=haugene/transmission-openvpn docker container
-After=docker.service
-Requires=docker.service
-
-[Service]
-User=bittorrent
-TimeoutStartSec=0
-ExecStartPre=-/usr/bin/docker kill transmission-openvpn
-ExecStartPre=-/usr/bin/docker rm transmission-openvpn
-ExecStartPre=/usr/bin/docker pull haugene/transmission-openvpn
-ExecStart=/usr/bin/docker run \
-        --name transmission-openvpn \
-        --privileged \
-        -v /home/bittorrent/data/:/data \
-        -e "OPENVPN_PROVIDER=TORGUARD" \
-        -e "OPENVPN_USERNAME=bittorrent@example.com" \
-        -e "OPENVPN_PASSWORD=hunter2" \
-        -e "OPENVPN_CONFIG=Netherlands" \
-        -e "OPENVPN_OPTS=--inactive 3600 --ping 10 --ping-exit 60" \
-        -e "TRANSMISSION_UMASK=0" \
-        -p 9091:9091 \
-        --dns 8.8.8.8 \
-        --dns 8.8.4.4 \
-        haugene/transmission-openvpn
-Restart=always
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-```
-
-Then enable and start the new service with:
-
-```
-$ sudo systemctl enable /etc/systemd/system/transmission-openvpn.service
-$ sudo systemctl restart transmission-openvpn.service
-```
-
-If it is stopped or killed in any fashion, systemd will restart the container. If you do want to shut it down, then run the following command and it will stay down until you restart it.
-
-```
-$ sudo systemctl stop transmission-openvpn.service
-# Later ...
-$ sudo systemctl start transmission-openvpn.service
-```
