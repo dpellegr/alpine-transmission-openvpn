@@ -116,17 +116,16 @@ RUN addgroup -S -g 2001 media
 RUN usermod -h /config -u 1001 -G media -s /bin/nologin transmission
 
 # add local files and replace init script
-RUN rm /etc/init.d/openvpn
+RUN rm /etc/init.d/transmission
 COPY openvpn/ /etc/openvpn/
 COPY transmission/ /etc/transmission/
 COPY init/ /etc/init.d/
 
-RUN chmod +x /etc/init.d/openvpn
-#\
-# && chmod +x /etc/init.d/deluged \
-# && chmod +x /etc/init.d/deluge-web
+RUN chmod +x /etc/init.d/openvpn \
+ && chmod +x /etc/init.d/transmission
 
-RUN chmod +x /etc/openvpn/transmission-up.sh \
+RUN chmod +x /etc/init.d/transmission \
+ && chmod +x /etc/openvpn/transmission-up.sh \
  && chmod +x /etc/openvpn/transmission-down.sh
 
 #RUN rc-update add openvpn default
