@@ -118,6 +118,7 @@ RUN adduser -SH -u 1001 -G media -s /sbin/nologin -h /config transmission
 # add local files and replace init script
 RUN rm /etc/init.d/openvpn
 COPY openvpn/ /etc/openvpn/
+COPY transmission/ /etc/transmission/
 COPY init/ /etc/init.d/
 
 RUN chmod +x /etc/init.d/openvpn
