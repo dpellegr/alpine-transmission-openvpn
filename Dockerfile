@@ -87,6 +87,7 @@ ENV PYTHON_EGG_CACHE="/config/plugins/.python-eggs"
 VOLUME /config
 VOLUME /data
 VOLUME /etc/openvpn
+VOLUME /etc/scripts
 
 # Exposed ports
 EXPOSE 9091
