@@ -113,7 +113,7 @@ RUN rm -rf /root/.cache
 
 # Create user and group
 RUN addgroup -S -g 2001 media
-RUN adduser -SH -u 1001 -G media -s /sbin/nologin -h /config transmission
+RUN usermod -h /config -u 1001 -G media -s /bin/nologin transmission
 
 # add local files and replace init script
 RUN rm /etc/init.d/openvpn
