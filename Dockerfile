@@ -27,57 +27,34 @@ RUN \
 	unrar \
 	unzip \
 	shadow \
- && apk add --no-cache \
-	--repository http://nl.alpinelinux.org/alpine/edge/main \
-	libressl2.5-libssl \
- && apk add --no-cache \
-	--repository http://nl.alpinelinux.org/alpine/edge/testing \
-	deluge
+	curl \
+	openssl \
+	jq \
+	tar \
+	transmission-cli \
+	transmission-daemon
 
 # install openvpn
 RUN apk add --no-cache openvpn
  
-# Install build packages
-RUN apk add --no-cache --virtual=build-dependencies \
-	g++ \
-	gcc \
-	libffi-dev \
-	libressl-dev \
-	py2-pip \
-	python2-dev
-
-# install pip packages
-RUN pip install --no-cache-dir -U \
-	incremental \
-	pip \
- && pip install --no-cache-dir -U \
-	crypto \
-	mako \
-	markupsafe \
-	pyopenssl \
-	service_identity \
-	six \
-	twisted \
-	zope.interface
-
 # cleanup
-RUN apk del --purge build-dependencies \
- && rm -rf /root/.cache
+RUN rm -rf /root/.cache
 
 # Create user and group
 RUN addgroup -S -g 2001 media
-RUN adduser -SH -u 1001 -G media -s /sbin/nologin -h /config deluge
+RUN adduser -SH -u 1001 -G media -s /sbin/nologin -h /config transmission
 
 # add local files and replace init script
 RUN rm /etc/init.d/openvpn
 COPY openvpn/ /etc/openvpn/
 COPY init/ /etc/init.d/
 
-RUN chmod +x /etc/init.d/openvpn \
- && chmod +x /etc/init.d/deluged \
- && chmod +x /etc/init.d/deluge-web
+RUN chmod +x /etc/init.d/openvpn
+#\
+# && chmod +x /etc/init.d/deluged \
+# && chmod +x /etc/init.d/deluge-web
 
-RUN chmod +x /etc/openvpn/deluge-up.sh \
- && chmod +x /etc/openvpn/deluge-down.sh
+RUN chmod +x /etc/openvpn/transmission-up.sh \
+ && chmod +x /etc/openvpn/transmission-down.sh
 
-RUN rc-update add openvpn default
+#RUN rc-update add openvpn default
