@@ -116,7 +116,7 @@ RUN addgroup -S -g 2001 media
 RUN usermod -h /config -u 1001 -G media -s /bin/nologin transmission
 
 # add local files and replace init script
-RUN rm /etc/init.d/transmission
+#RUN rm /etc/init.d/transmission
 COPY openvpn/ /etc/openvpn/
 COPY transmission/ /etc/transmission/
 COPY init/ /etc/init.d/
