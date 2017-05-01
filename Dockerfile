@@ -106,6 +106,9 @@ RUN apk add --no-cache \
 	transmission-cli \
 	transmission-daemon
 
+RUN apk add --no-cache --repository http://nl.alpinelinux.org/alpine/edge/testing \
+	dockerize
+
 # install openvpn
 RUN apk add --no-cache openvpn
  
