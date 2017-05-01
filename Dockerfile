@@ -104,14 +104,12 @@ RUN apk add --no-cache \
 	jq \
 	tar \
 	transmission-cli \
-	transmission-daemon
+	transmission-daemon \
+	openvpn
 
 RUN apk add --no-cache --repository http://nl.alpinelinux.org/alpine/edge/testing \
 	dockerize
 
-# install openvpn
-RUN apk add --no-cache openvpn
- 
 # cleanup
 RUN rm -rf /root/.cache
 
@@ -120,14 +118,10 @@ RUN addgroup -S -g 2001 media
 RUN usermod -h /config -u 1001 -G media -s /bin/nologin transmission
 
 # add local files and replace init script
-#RUN rm /etc/init.d/transmission
 COPY openvpn/ /etc/openvpn/
 COPY transmission/ /etc/transmission/
 COPY init/ /etc/init.d/
 
-RUN chmod a+x /etc/init.d/openvpn \
- && chmod a+x /etc/init.d/transmission \
- && chmod a+x /etc/openvpn/transmission-up.sh \
- && chmod a+x /etc/openvpn/transmission-down.sh
+RUN chmod a+x /etc/init.d/openvpn /etc/init.d/transmission /etc/openvpn/transmission-up.sh /etc/openvpn/transmission-down.sh
 
-#RUN rc-update add openvpn default
+RUN rc-update add openvpn default
