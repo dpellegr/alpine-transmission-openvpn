@@ -126,9 +126,7 @@ COPY transmission/ /etc/transmission/
 COPY init/ /etc/init.d/
 
 RUN chmod a+x /etc/init.d/openvpn \
- && chmod a+x /etc/init.d/transmission
-
-RUN chmod a+x /etc/init.d/transmission \
+ && chmod a+x /etc/init.d/transmission \
  && chmod a+x /etc/openvpn/transmission-up.sh \
  && chmod a+x /etc/openvpn/transmission-down.sh
 
