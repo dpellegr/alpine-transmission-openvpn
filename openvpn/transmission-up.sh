@@ -1,3 +1,3 @@
 #!/bin/sh
 
-/etc/init.d/transmission start
+IF_DEV=$1 IPADDR=$4 /etc/init.d/transmission start
