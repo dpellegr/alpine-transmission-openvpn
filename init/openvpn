@@ -151,6 +151,9 @@ start() {
 		fi
 	fi
 
+	chmod a+x /etc/openvpn/transmission-up.sh
+	chmod a+x /etc/openvpn/transmission-down.sh
+
 	start-stop-daemon --start --exec /usr/sbin/openvpn --pidfile "${vpnpid}" \
 		-- --config "${vpn_config_file}" --writepid "${vpnpid}" --daemon \
 		--setenv SVCNAME "${SVCNAME}" ${args}
