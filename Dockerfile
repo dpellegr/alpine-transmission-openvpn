@@ -122,6 +122,4 @@ COPY openvpn/ /etc/openvpn/
 COPY transmission/ /etc/transmission/
 COPY init/ /etc/init.d/
 
-RUN chmod a+x /etc/init.d/openvpn /etc/init.d/transmission /etc/openvpn/transmission-up.sh /etc/openvpn/transmission-down.sh
-
 RUN rc-update add openvpn default
