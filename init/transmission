@@ -48,7 +48,7 @@ start() {
 
 	. /etc/transmission/environment-variables.sh
 
-	einfo "Updating TRANSMISSION_BIND_ADDRESS_IPV4 to the ip of $IFDEV : $IPADDR"
+	einfo "Updating TRANSMISSION_BIND_ADDRESS_IPV4 to the ip of $IF_DEV : $IPADDR"
 	export TRANSMISSION_BIND_ADDRESS_IPV4=$IPADDR
 
 	dockerize -template /etc/transmission/settings.tmpl:config/settings.json /bin/true
