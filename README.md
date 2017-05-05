@@ -51,7 +51,7 @@ $ docker run --privileged  -d \
 	      -e "PUID=1001" \
 	      -e "PGID=2001" \
               -p 9091:9091 \
-              haugene/transmission-openvpn
+              oskarirauta/alpine-transmission-openvpn
 ```
 
 You must set the environment variables `OPENVPN_PROVIDER`, `OPENVPN_USERNAME` and `OPENVPN_PASSWORD` to provide basic connection details.
