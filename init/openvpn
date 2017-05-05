@@ -105,6 +105,9 @@ start() {
 	
 	ebegin "Starting ${SVCNAME}"
 
+	# Upgrade if possible
+	apk upgrade --no-cache transmission-cli transmission-daemon openvpn
+
 	checkconfig || return 1
 
 	local args="" reenter=${RE_ENTER:-no}
