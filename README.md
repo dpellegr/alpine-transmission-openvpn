@@ -1,5 +1,6 @@
 # Transmission with WebUI and OpenVPN
-Docker container which runs Transmission torrent client with WebUI while connecting to OpenVPN.
+Docker container which runs Transmission torrent client with WebUI while connecting to OpenVPN inside Alpine Linux.
+Auto-upgrades both OpenVPN and Transmission on every startup.
 It bundles certificates and configurations for the following VPN providers:
 
 | Provider Name                | Config Value |
