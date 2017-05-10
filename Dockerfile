@@ -107,7 +107,7 @@ RUN apk add --no-cache \
 	transmission-daemon \
 	openvpn
 
-RUN apk add --no-cache --repository http://nl.alpinelinux.org/alpine/edge/testing \
+RUN apk add --no-cache --repository "http://nl.alpinelinux.org/alpine/edge/testing" \
 	dockerize
 
 # cleanup
