@@ -122,4 +122,4 @@ COPY openvpn/ /etc/openvpn/
 COPY transmission/ /etc/transmission/
 COPY init/ /etc/init.d/
 
-RUN rc-update add openvpn default
+RUN rc-update add openvpn-serv default
