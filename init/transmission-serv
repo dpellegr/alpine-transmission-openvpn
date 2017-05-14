@@ -167,9 +167,9 @@ auto_upgrade() {
             try_upgrade="1"
         fi
     fi
-    if [ "${try_upgrade}" = "1" ]; then
-    	upgrade
-    fi
+    if [ "${try_upgrade}" = "1" ]; then
+        upgrade
+    fi    
 }
 
 check_config() {
