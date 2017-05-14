@@ -12,6 +12,18 @@ description_reload="Reload ${service_name} settings"
 description_upgrade="Upgrade ${service_name} if update is available"
 description_cronjob="Re-start if service ${service_name} has crashed. Should be executed from cron job"
 
+user_name="transmission"
+user_group="media"
+
+pkg_name1="transmission-daemon"
+pkg_name2="transmission-cli"
+pkg_arch="x86_64"
+pkg_repo="http://nl.alpinelinux.org/alpine/v3.5/main"
+
+command_file="/usr/bin/transmission-daemon"
+config_path="/config"
+log_path="${config_path}/logs"
+daemon_args=""
 
 rundir=/config
 pidfile=/config/transmission.pid
@@ -25,33 +37,164 @@ SSD_OPTIONS=""
 # compatibility for upgraders
 TRANSMISSION_OPTIONS=${TRANSMISSION_OPTIONS:-$TD_OPTS}
 
-check_config() {
-	if [ ! -d "${rundir}" ]; then
-		mkdir "${rundir}"
-		if [ -n "${runas_user}" ]; then
-			chown -R ${runas_user} "${rundir}"
-		fi
-	fi
+add_missing_path() {
+    path="$1"
+    uid_name="$2"
+    gid_name="$3"
+    if [ ! -z "${path}" ] && [ ! -d "${path}" ]; then
+        mkdir -p "${path}"
+        if [ ! -z "${uid_name}" ] && [ ! -z "${gid_name}" ]; then
+            chown -R ${uid_name}:${gid_name} "${path}"
+        fi
+    fi
+}
 
+file_age() {
+    file="$1"
+    cur_time=$(($(date +%s)))
+    file_time=$(($(date -r ${file} +%s)))
+    file_age=$((${cur_time} - ${file_time}))
+    echo "${file_age}"
+}
+
+is_running() {
+    ret_val=0
+    if [ -f "${config_path}/${service_name}.pid" ]; then
+        pid=$(cat "${config_path}/${service_name}.pid")
+        cmd_running=$(cat "/proc/${pid}/cmdline" | grep "${command_file}" | wc -l)
+        if [ $cmd_running -ge 1 ]; then
+            ret_val=1
+        fi
+    fi
+    echo "${ret_val}"
+}
+
+validate_user() {
+
+    uid_name="$1"
+    gid_name="$2"
+    
+    if [ ! -z "${uid_name}" ] && [ ! -z "${gid_name}" ]; then
+
+        if [ ! -z "${PUID}" ] && [ ! "$(id -u ${uid_name})" -eq "${PUID}" ]; then
+            usermod -o -u "${PUID}" ${uid_name}
+        fi
+
+        if [ ! -z "${PGID}" ] && [ ! "$(id -g ${uid_name})" -eq "${PGID}" ]; then
+            groupmod -o -g "${PGID}" ${gid_name}
+        fi
+        
+        # Change ownerships
+        chown -R ${uid_name}:${gid_name} /config
+	chown ${uid_name}:${gid_name} \
+		${TRANSMISSION_DOWNLOAD_DIR} \
+		${TRANSMISSION_INCOMPLETE_DIR} \
+		${TRANSMISSION_WATCH_DIR}
+    fi
+}
+
+upgrade() {
+    if [ ! -x "${command_file}" ]; then
+        einfo "Executable ${command_file} is missing. ${pkg_name} not installed?"
+        eend 1 "${pkg_name} not installed or broken."
+        exit 1
+    else
+        touch "${config_path}/.upgrade_check"
+	current_version1=""
+	remote_version1=""
+	current_version2=""
+	remote_version2=""
+        updateAvail1=$(apk --no-cache --repository "${pkg_repo}" version ${pkg_name1} | grep ${pkg_name1})
+        updateAvail2=$(apk --no-cache --repository "${pkg_repo}" version ${pkg_name2} | grep ${pkg_name2})
+        if [ "$updateAvail1" != "${updateAvail1/</}" ]; then
+            current_version1=$(echo "${updateAvail1}" | awk -F"<" '{print $1}' | sed "s/${pkg_name1}-//g" | tr -d '[:space:]')
+            remote_version1=$(echo "${updateAvail1}" | awk -F"<" '{print $2}' | tr -d '[:space:]')
+            wget -q -P /tmp "${repository}/${arch}/${pkg_name1}-${remote_version1}.apk"
+	fi
+        if [ "$updateAvail2" != "${updateAvail2/</}" ]; then
+            current_version2=$(echo "${updateAvail2}" | awk -F"<" '{print $1}' | sed "s/${pkg_name2}-//g" | tr -d '[:space:]')
+            remote_version2=$(echo "${updateAvail2}" | awk -F"<" '{print $2}' | tr -d '[:space:]')
+            wget -q -P /tmp "${repository}/${arch}/${pkg_name2}-${remote_version2}.apk"
+	fi
+        if [ ! -z "${remote_version1}" ] || [ ! -z "${remote_version2}" ]; then
+		started=$(is_running)
+		if [ -f "/tmp/${pkg_name1}-${remote_version1}.apk" ] && [ -f "/tmp/${pkg_name2}-${remote_version2}.apk" ]; then
+			if [ "${started}" = "1" ]; then
+                    		/etc/init.d/transmission-serv stop
+                	fi
+			apk --quiet --no-cache del "${pkg_name1}" "${pkg_name2}"
+			apk --quiet --no-cache add \
+				"/tmp/${pkg_name1}-${remote_version1}.apk" "/tmp/${pkg_name2}-${remote_version2}.apk"
+			rm -f "/tmp/${pkg_name1}-${remote_version1}.apk" "/tmp/${pkg_name2}-${remote_version2}.apk"
+                	if [ "${started}" = "1" ]; then
+                    		/etc/init.d/transmission-serv start
+                	fi
+		elif [ -f "/tmp/${pkg_name1}-${remote_version1}.apk" ]; then
+			if [ "${started}" = "1" ]; then
+                    		/etc/init.d/transmission-serv stop
+                	fi
+			apk --quiet --no-cache del "${pkg_name1}"
+			apk --quiet --no-cache add \
+				"/tmp/${pkg_name1}-${remote_version1}.apk"
+			rm -f "/tmp/${pkg_name1}-${remote_version1}.apk"
+                	if [ "${started}" = "1" ]; then
+                    		/etc/init.d/transmssion-serv start
+			fi
+		elif [ -f "/tmp/${pkg_name2}-${remote_version2}.apk" ]; then
+			if [ "${started}" = "1" ]; then
+                    		/etc/init.d/transmission-serv stop
+                	fi
+			apk --quiet --no-cache del "${pkg_name2}"
+			apk --quiet --no-cache add \
+				"/tmp/${pkg_name2}-${remote_version2}.apk"
+			rm -f "/tmp/${pkg_name2}-${remote_version2}.apk"
+                	if [ "${started}" = "1" ]; then
+                    		/etc/init.d/transmssion-serv start
+                	fi
+		else
+			einfo "Upgrade file downloading has failed."
+                	eend 1 "Cannot download ${pkg_name} upgrade"
+                	exit 1
+		fi
+	else
+		einfo "No upgrades available at the moment for ${pkg_name1} or ${pkg_name2}."
+	fi
+    fi
+}
+
+auto_upgrade() {
+    try_upgrade="false"
+    if [ ! -f "${config_path}/.upgrade_check" ]; then
+        try_upgrade="true"
+    else
+        since_last_upgrade=$(($(file_age "${config_path}/.upgrade_check")))
+        if [ $since_last_upgrade -ge 86400 ]; then
+            upgrade
+        fi
+    fi
+}
+
+
+
+check_config() {
 	# In case no config directory option passed use default
 	if ! $(echo ${TRANSMISSION_OPTIONS} | grep -q -e '\B-g' -e '\B--config-dir'); then
-		TRANSMISSION_OPTIONS="${TRANSMISSION_OPTIONS} --config-dir ${config_dir}"
+		TRANSMISSION_OPTIONS="${TRANSMISSION_OPTIONS} --config-dir ${config_path}"
 		# put download dir location on first run (and take it from config later)
-		if [ ! -f ${config_dir}/settings.json ]; then
+		if [ ! -f "${config_path}/settings.json" ]; then
 			TRANSMISSION_OPTIONS="${TRANSMISSION_OPTIONS} --download-dir ${download_dir}"
 		fi
-	fi
-
-	if [ -n "${runas_user}" ]; then
-		SSD_OPTIONS="${SSD_OPTIONS} --user ${runas_user}"
 	fi
 }
 
 start() {
+	add_missing_path "${config_path}" "${user_name}" "${user_group}"
 	check_config
+	validate_user
 
 	. /etc/transmission/environment-variables.sh
 
+	ebegin "Starting transmission daemon"
 	einfo "Updating TRANSMISSION_BIND_ADDRESS_IPV4 to the ip of $IF_DEV : $IPADDR"
 	export TRANSMISSION_BIND_ADDRESS_IPV4=$IPADDR
 
@@ -62,18 +205,17 @@ start() {
 		ln -s /dev/urandom /dev/random
 	fi
 
-	chown -R transmission:media /config
-	chown transmission:media \
-		${TRANSMISSION_DOWNLOAD_DIR} \
-		${TRANSMISSION_INCOMPLETE_DIR} \
-		${TRANSMISSION_WATCH_DIR}
+	export RUN_AS=${user_name}
 
-	export RUN_AS=${runas_user}
+	start-stop-daemon --start --quiet \
+		--exec "${command_file}" \
+		--user ${user_name}:${user_group} \
+		--pidfile "${config_path}/${service_name}.pid" ${SSD_OPTIONS} \
+		-- \
+			--pid-file "${config_path}/${service_name}.pid" \
+			--logfile "${config_path}/${service_name}.log" \
+			${TRANSMISSION_OPTIONS}
 
-	ebegin "Starting transmission daemon"
-	start-stop-daemon --start --quiet --pidfile ${pidfile} ${SSD_OPTIONS} \
-		--exec /usr/bin/transmission-daemon -- --pid-file ${pidfile} \
-		--logfile ${logfile} ${TRANSMISSION_OPTIONS}
 	eend $?
 
 	if [ "$OPENVPN_PROVIDER" = "PIA" ]; then
@@ -84,13 +226,13 @@ start() {
 
 stop() {
 	ebegin "Stopping transmission daemon"
-	start-stop-daemon --stop --quiet --retry TERM/45/QUIT/15 --pidfile ${pidfile}
+	start-stop-daemon --stop --quiet --retry TERM/45/QUIT/15 --pidfile "${config_path}/${service_name}.pid"
 	eend $?
 }
 
 reload() {
 	ebegin "Reloading transmission configuration"
-	start-stop-daemon --signal HUP --pidfile ${pidfile}
+	start-stop-daemon --signal HUP --pidfile "${config_path}/${service_name}.pid"
 	eend $?
 }
 
