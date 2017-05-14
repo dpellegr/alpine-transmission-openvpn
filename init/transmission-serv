@@ -90,8 +90,8 @@ validate_user() {
 
 upgrade() {
     if [ ! -x "${command_file}" ]; then
-        einfo "Executable ${command_file} is missing. ${pkg_name} not installed?"
-        eend 1 "${pkg_name} not installed or broken."
+        einfo "Executable ${command_file} is missing. ${service_name} not installed?"
+        eend 1 "${service_name} not installed or broken."
         exit 1
     else
         touch "${config_path}/.upgrade_check"
@@ -148,7 +148,7 @@ upgrade() {
                 	fi
 		else
 			einfo "Upgrade file downloading has failed."
-                	eend 1 "Cannot download ${pkg_name} upgrade"
+                	eend 1 "Cannot download ${pkg_name1} or ${pkg_name2} upgrade(s)"
                 	exit 1
 		fi
 	else
