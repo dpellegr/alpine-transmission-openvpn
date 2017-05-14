@@ -1,3 +1,3 @@
 #!/bin/sh
 
-/etc/init.d/transmission stop
+/etc/init.d/transmission-serv stop
