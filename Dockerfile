@@ -105,7 +105,8 @@ RUN apk add --no-cache \
 	tar \
 	transmission-cli \
 	transmission-daemon \
-	openvpn
+	openvpn \
+	dcron
 
 RUN apk add --no-cache --repository "http://nl.alpinelinux.org/alpine/edge/testing" \
 	dockerize
@@ -121,5 +122,7 @@ RUN usermod -h /config -u 1001 -G media -s /bin/nologin transmission
 COPY openvpn/ /etc/openvpn/
 COPY transmission/ /etc/transmission/
 COPY init/ /etc/init.d/
+COPY /cron/root /etc/crontabs/root
 
 RUN rc-update add openvpn-serv default
+RUN rc-update add dcron default
