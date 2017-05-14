@@ -3,11 +3,15 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Header: /var/cvsroot/gentoo-x86/net-p2p/transmission/files/transmission-daemon.initd.8,v 1.2 2011/12/04 10:35:07 swegener Exp $
 
-extra_started_commands="reload"
+extra_started_commands="reload cronjob upgrade"
+service_name="transmission"
 description="Transmission is a fast, easy and free bittorrent client"
-description_start="Start transmission-daemon server and web interface"
-description_stop="Stop transmission-daemon server and web interface"
-description_reload="Reload transmission-daemon settings"
+description_start="Start ${service_name} service"
+description_stop="Stop ${service_name} service"
+description_reload="Reload ${service_name} settings"
+description_upgrade="Upgrade ${service_name} if update is available"
+description_cronjob="Re-start if service ${service_name} has crashed. Should be executed from cron job"
+
 
 rundir=/config
 pidfile=/config/transmission.pid
