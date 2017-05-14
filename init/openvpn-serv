@@ -2,7 +2,22 @@
 # Copyright 1999-2007 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
+extra_commands="cronjob upgrade"
+service_name="openvpn"
 description="VPN service"
+description_start="Start ${service_name}"
+description_stop="Stop ${service_name}"
+description_upgrade="Upgrade ${service_name} if update is available"
+description_cronjob="Re-start if service ${service_name} has crashed. Should be executed from cron job"
+
+user_name="transmission"
+user_group="media"
+
+pkg_name="openvpn"
+pkg_arch="x86_64"
+pkg_repo="http://nl.alpinelinux.org/alpine/v3.5/main"
+
+command_file="/usr/sbin/openvpn"
 
 vpn_provider="$(echo $OPENVPN_PROVIDER | tr '[A-Z]' '[a-z]')"
 vpn_provider_configs="/etc/openvpn/$vpn_provider"
@@ -18,6 +33,107 @@ depend() {
 	need localmount net
 	use dns
 	after bootmisc
+}
+
+add_missing_path() {
+    path="$1"
+    uid_name="$2"
+    gid_name="$3"
+    if [ ! -z "${path}" ] && [ ! -d "${path}" ]; then
+        mkdir -p "${path}"
+        if [ ! -z "${uid_name}" ] && [ ! -z "${gid_name}" ]; then
+            chown -R ${uid_name}:${gid_name} "${path}"
+        fi
+    fi
+}
+
+file_age() {
+    file="$1"
+    cur_time=$(($(date +%s)))
+    file_time=$(($(date -r ${file} +%s)))
+    file_age=$((${cur_time} - ${file_time}))
+    echo "${file_age}"
+}
+
+is_running() {
+    ret_val=0
+    if [ -f "${config_path}/${service_name}.pid" ]; then
+        pid=$(cat "${config_path}/${service_name}.pid")
+        cmd_running=$(cat "/proc/${pid}/cmdline" | grep "${command_file}" | wc -l)
+        if [ $cmd_running -ge 1 ]; then
+            ret_val=1
+        fi
+    fi
+    echo "${ret_val}"
+}
+
+validate_user() {
+
+    uid_name="$1"
+    gid_name="$2"
+    
+    if [ ! -z "${uid_name}" ] && [ ! -z "${gid_name}" ]; then
+
+        if [ ! -z "${PUID}" ] && [ ! "$(id -u ${uid_name})" -eq "${PUID}" ]; then
+            usermod -o -u "${PUID}" ${uid_name}
+        fi
+
+        if [ ! -z "${PGID}" ] && [ ! "$(id -g ${uid_name})" -eq "${PGID}" ]; then
+            groupmod -o -g "${PGID}" ${gid_name}
+        fi
+        
+        # Change ownerships
+        chown -R ${uid_name}:${gid_name} /config
+        chown ${uid_name}:${gid_name} /data
+    fi
+}
+
+upgrade() {
+    if [ ! -x "${command_file}" ]; then
+        einfo "Executable ${command_file} is missing. ${pkg_name} not installed?"
+        eend 1 "${pkg_name} not installed or broken."
+        exit 1
+    else
+        touch "${config_path}/.upgrade_check"
+        updateAvail=$(apk --no-cache --repository "${pkg_repo}" version ${pkg_name} | grep ${pkg_name})
+        if [ "$updateAvail" != "${updateAvail/</}" ]; then
+            current_version=$(echo "${updateAvail}" | awk -F"<" '{print $1}' | sed "s/${pkg_name}-//g" | tr -d '[:space:]')
+            remote_version=$(echo "${updateAvail}" | awk -F"<" '{print $2}' | tr -d '[:space:]')
+            einfo "Upgrading ${pkg_name} from version ${current_version} to version ${remote_version}"
+            wget -q -P /tmp "${repository}/${arch}/${pkg_name}-${remote_version}.apk"
+            if [ -f "/tmp/${pkg_name}-${remote_version}.apk" ]; then
+                started=$(is_running)
+                if [ "${started}" = "1" ]; then
+                    /etc/init.d/nginx-serv stop
+                fi
+                apk --quiet --no-cache del ${pkg_name}
+                apk --quiet --no-cache add "/tmp/${pkg_name}-${remote_version}.apk"
+                rm -f "/tmp/${pkg_name}-${remote_version}.apk" > /dev/null
+                setcap CAP_NET_BIND_SERVICE=+eip /usr/sbin/nginx
+                if [ "${started}" = "1" ]; then
+                    /etc/init.d/nginx-serv start
+                fi
+            else
+                einfo "Upgrade file downloading has failed."
+                eend 1 "Cannot download ${pkg_name} upgrade"
+                exit 1
+            fi
+        else
+            einfo "No upgrade available at the moment for ${pkg_name}."
+        fi
+    fi
+}
+
+auto_upgrade() {
+    try_upgrade="false"
+    if [ ! -f "${config_path}/.upgrade_check" ]; then
+        try_upgrade="true"
+    else
+        since_last_upgrade=$(($(file_age "${config_path}/.upgrade_check")))
+        if [ $since_last_upgrade -ge 86400 ]; then
+            upgrade
+        fi
+    fi
 }
 
 checkconfig() {
