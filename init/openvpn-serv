@@ -94,7 +94,7 @@ upgrade() {
         eend 1 "${pkg_name} not installed or broken."
         exit 1
     else
-        touch "${config_path}/.upgrade_check2"
+        touch "${config_path}/.upgrade_check"
         updateAvail=$(apk --no-cache --repository "${pkg_repo}" version ${pkg_name} | grep ${pkg_name})
         if [ "$updateAvail" != "${updateAvail/</}" ]; then
             current_version=$(echo "${updateAvail}" | awk -F"<" '{print $1}' | sed "s/${pkg_name}-//g" | tr -d '[:space:]')
@@ -104,14 +104,13 @@ upgrade() {
             if [ -f "/tmp/${pkg_name}-${remote_version}.apk" ]; then
                 started=$(is_running)
                 if [ "${started}" = "1" ]; then
-                    /etc/init.d/nginx-serv stop
+                    /etc/init.d/openvpn-serv stop
                 fi
                 apk --quiet --no-cache del ${pkg_name}
                 apk --quiet --no-cache add "/tmp/${pkg_name}-${remote_version}.apk"
                 rm -f "/tmp/${pkg_name}-${remote_version}.apk" > /dev/null
-                setcap CAP_NET_BIND_SERVICE=+eip /usr/sbin/nginx
                 if [ "${started}" = "1" ]; then
-                    /etc/init.d/nginx-serv start
+                    /etc/init.d/openvpn-serv start
                 fi
             else
                 einfo "Upgrade file downloading has failed."
@@ -126,10 +125,10 @@ upgrade() {
 
 auto_upgrade() {
     try_upgrade="0"
-    if [ ! -f "${config_path}/.upgrade_check2" ]; then
+    if [ ! -f "${config_path}/.upgrade_check" ]; then
         try_upgrade="1"
     else
-        since_last_upgrade=$(($(file_age "${config_path}/.upgrade_check2")))
+        since_last_upgrade=$(($(file_age "${config_path}/.upgrade_check")))
         if [ $since_last_upgrade -ge 86400 ]; then
             try_upgrade="1"
         fi
@@ -183,36 +182,6 @@ checkconfig() {
 			"not exist."
 		return 1
 	fi
-
-	if [ ! -z "${PUID}" ]; then                                                                                                                                                                 
-		if [ ! "$(id -u transmission)" -eq "${PUID}" ]; then
-
-			# usermod likes to chown the home directory, so create a new one and use that
-			# However, if the new UID is 0, we can't set the home dir back because the
-			# UID of 0 is already in use (executing this script).
-
-			if [ ! "${PUID}" -eq 0 ]; then
-				mkdir /tmp/temphome
-				usermod -d /tmp/temphome transmission
-			fi
-
-			# Change the UID
-			usermod -o -u "${PUID}" transmission
-
-			# Cleanup the temp home dir
-			if [ ! "${PUID}" -eq 0 ]; then
-				usermod -d /config transmission
-				rm -Rf /tmp/temphome
-			fi
-		fi
-	fi
-
-	if [ ! -z "${PGID}" ] && [ ! "$(id -g transmission)" -eq "${PGID}" ]; then
-		groupmod -o -g "${PGID}" media
-	fi
-
-	chown -R transmission:media /config
-	chown transmission:media /data
 }
 
 start() {
@@ -222,12 +191,13 @@ start() {
 		return 0
 	fi
 	
-	ebegin "Starting ${SVCNAME}"
+	ebegin "Starting ${service_name}"
 
 	# Upgrade if possible
-	apk upgrade --no-cache transmission-cli transmission-daemon openvpn
+	auto_upgrade
 
 	checkconfig || return 1
+	validate_user
 
 	local args="" reenter=${RE_ENTER:-no}
 	# If the config file does not specify the cd option, we do
@@ -273,7 +243,9 @@ start() {
 		fi
 	fi
 
-	start-stop-daemon --start --exec /usr/sbin/openvpn --pidfile "${vpnpid}" \
+	start-stop-daemon --start \
+		--exec ${command_file} \
+		--pidfile "${vpnpid}" \
 		-- --config "${vpn_config_file}" --writepid "${vpnpid}" --daemon \
 		--setenv SVCNAME "${SVCNAME}" ${args}
 	eend $? "Check your logs to see why startup failed"
@@ -287,7 +259,7 @@ stop() {
 		return 0
 	fi
 
-	ebegin "Stopping ${SVCNAME}"
+	ebegin "Stopping ${service_name}"
 	start-stop-daemon --stop --quiet \
 		--exec /usr/sbin/openvpn --pidfile "${vpnpid}"
 	eend $?
