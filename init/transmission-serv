@@ -22,15 +22,9 @@ pkg_repo="http://nl.alpinelinux.org/alpine/v3.5/main"
 
 command_file="/usr/bin/transmission-daemon"
 config_path="/config"
+download_path=${TRANSMISSION_DOWNLOAD_DIR:-/data/completed}
 log_path="${config_path}/logs"
 daemon_args=""
-
-rundir=/config
-pidfile=/config/transmission.pid
-config_dir=/config
-download_dir=${TRANSMISSION_DOWNLOAD_DIR:-/data/completed}
-logfile=/config/transmission.log
-runas_user=transmission
 
 SSD_OPTIONS=""
 
