@@ -27,6 +27,7 @@ log_path="${config_path}/logs"
 daemon_args=""
 
 SSD_OPTIONS=""
+TD_OPTS=""
 
 # compatibility for upgraders
 TRANSMISSION_OPTIONS=${TRANSMISSION_OPTIONS:-$TD_OPTS}
@@ -81,7 +82,7 @@ validate_user() {
         # Change ownerships
         chown -R ${uid_name}:${gid_name} /config
 	chown ${uid_name}:${gid_name} \
-		${TRANSMISSION_DOWNLOAD_DIR} \
+		${download_path} \
 		${TRANSMISSION_INCOMPLETE_DIR} \
 		${TRANSMISSION_WATCH_DIR}
     fi
@@ -176,7 +177,7 @@ check_config() {
 		TRANSMISSION_OPTIONS="${TRANSMISSION_OPTIONS} --config-dir ${config_path}"
 		# put download dir location on first run (and take it from config later)
 		if [ ! -f "${config_path}/settings.json" ]; then
-			TRANSMISSION_OPTIONS="${TRANSMISSION_OPTIONS} --download-dir ${download_dir}"
+			TRANSMISSION_OPTIONS="${TRANSMISSION_OPTIONS} --download-dir ${download_path}"
 		fi
 	fi
 }
