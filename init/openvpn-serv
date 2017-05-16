@@ -90,9 +90,9 @@ validate_user() {
 
 upgrade() {
     if [ ! -x "${command_file}" ]; then
-        einfo "Executable ${command_file} is missing. ${pkg_name} not installed?"
-        eend 1 "${pkg_name} not installed or broken."
-        exit 1
+        einfo "Executable ${command_file} is missing. (Re-)Installing ${pkg_name}"
+        apk --quiet --no-cache del ${pkg_name}
+        apk --quiet --no-cache --repository "${pkg_repo}" add ${pkg_name}
     else
         touch "${config_path}/.upgrade_check"
         updateAvail=$(apk --no-cache --repository "${pkg_repo}" version ${pkg_name} | grep ${pkg_name})
@@ -100,22 +100,14 @@ upgrade() {
             current_version=$(echo "${updateAvail}" | awk -F"<" '{print $1}' | sed "s/${pkg_name}-//g" | tr -d '[:space:]')
             remote_version=$(echo "${updateAvail}" | awk -F"<" '{print $2}' | tr -d '[:space:]')
             einfo "Upgrading ${pkg_name} from version ${current_version} to version ${remote_version}"
-            wget -q -P /tmp "${repository}/${arch}/${pkg_name}-${remote_version}.apk"
-            if [ -f "/tmp/${pkg_name}-${remote_version}.apk" ]; then
-                started=$(is_running)
-                if [ "${started}" = "1" ]; then
-                    /etc/init.d/openvpn-serv stop
-                fi
-                apk --quiet --no-cache del ${pkg_name}
-                apk --quiet --no-cache add "/tmp/${pkg_name}-${remote_version}.apk"
-                rm -f "/tmp/${pkg_name}-${remote_version}.apk" > /dev/null
-                if [ "${started}" = "1" ]; then
-                    /etc/init.d/openvpn-serv start
-                fi
-            else
-                einfo "Upgrade file downloading has failed."
-                eend 1 "Cannot download ${pkg_name} upgrade"
-                exit 1
+            started=$(is_running)
+            if [ "${started}" = "1" ]; then
+                /etc/init.d/openvpn-serv stop
+            fi
+            apk --quiet --no-cache del ${pkg_name}
+            apk --quiet --no-cache --repository "${pkg_repo}" add ${pkg_name}
+            if [ "${started}" = "1" ]; then
+                /etc/init.d/openvpn-serv start
             fi
         else
             einfo "No upgrade available at the moment for ${pkg_name}."
