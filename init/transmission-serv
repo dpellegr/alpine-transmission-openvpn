@@ -90,9 +90,10 @@ validate_user() {
 
 upgrade() {
     if [ ! -x "${command_file}" ]; then
-        einfo "Executable ${command_file} is missing. ${service_name} not installed?"
-        eend 1 "${service_name} not installed or broken."
-        exit 1
+        einfo "${pkg_name} is not installed or broken. Re-installing ${pkg_name}"    
+        apk --quiet --no-cache del ${pkg_name1}
+        apk --quiet --no-cache del ${pkg_name2}
+        apk --quiet --no-cache --repository "${pkg_repo}" add ${pkg_name1} ${pkg_name2}
     else
         touch "${config_path}/.upgrade_check2"
 	current_version1=""
@@ -101,58 +102,20 @@ upgrade() {
 	remote_version2=""
         updateAvail1=$(apk --no-cache --repository "${pkg_repo}" version ${pkg_name1} | grep ${pkg_name1})
         updateAvail2=$(apk --no-cache --repository "${pkg_repo}" version ${pkg_name2} | grep ${pkg_name2})
-        if [ "$updateAvail1" != "${updateAvail1/</}" ]; then
-            current_version1=$(echo "${updateAvail1}" | awk -F"<" '{print $1}' | sed "s/${pkg_name1}-//g" | tr -d '[:space:]')
-            remote_version1=$(echo "${updateAvail1}" | awk -F"<" '{print $2}' | tr -d '[:space:]')
-            wget -q -P /tmp "${repository}/${arch}/${pkg_name1}-${remote_version1}.apk"
-	fi
-        if [ "$updateAvail2" != "${updateAvail2/</}" ]; then
-            current_version2=$(echo "${updateAvail2}" | awk -F"<" '{print $1}' | sed "s/${pkg_name2}-//g" | tr -d '[:space:]')
-            remote_version2=$(echo "${updateAvail2}" | awk -F"<" '{print $2}' | tr -d '[:space:]')
-            wget -q -P /tmp "${repository}/${arch}/${pkg_name2}-${remote_version2}.apk"
-	fi
-        if [ ! -z "${remote_version1}" ] || [ ! -z "${remote_version2}" ]; then
+        if [ "$updateAvail1" != "${updateAvail1/</}" ] || [ "$updateAvail2" != "${updateAvail2/</}" ]; then
+		einfo "Upgrading packages ${pkg_name1} and ${pkg_name2}"
 		started=$(is_running)
-		if [ -f "/tmp/${pkg_name1}-${remote_version1}.apk" ] && [ -f "/tmp/${pkg_name2}-${remote_version2}.apk" ]; then
-			if [ "${started}" = "1" ]; then
-                    		/etc/init.d/transmission-serv stop
-                	fi
-			apk --quiet --no-cache del "${pkg_name1}" "${pkg_name2}"
-			apk --quiet --no-cache add \
-				"/tmp/${pkg_name1}-${remote_version1}.apk" "/tmp/${pkg_name2}-${remote_version2}.apk"
-			rm -f "/tmp/${pkg_name1}-${remote_version1}.apk" "/tmp/${pkg_name2}-${remote_version2}.apk"
-                	if [ "${started}" = "1" ]; then
-                    		/etc/init.d/transmission-serv start
-                	fi
-		elif [ -f "/tmp/${pkg_name1}-${remote_version1}.apk" ]; then
-			if [ "${started}" = "1" ]; then
-                    		/etc/init.d/transmission-serv stop
-                	fi
-			apk --quiet --no-cache del "${pkg_name1}"
-			apk --quiet --no-cache add \
-				"/tmp/${pkg_name1}-${remote_version1}.apk"
-			rm -f "/tmp/${pkg_name1}-${remote_version1}.apk"
-                	if [ "${started}" = "1" ]; then
-                    		/etc/init.d/transmssion-serv start
-			fi
-		elif [ -f "/tmp/${pkg_name2}-${remote_version2}.apk" ]; then
-			if [ "${started}" = "1" ]; then
-                    		/etc/init.d/transmission-serv stop
-                	fi
-			apk --quiet --no-cache del "${pkg_name2}"
-			apk --quiet --no-cache add \
-				"/tmp/${pkg_name2}-${remote_version2}.apk"
-			rm -f "/tmp/${pkg_name2}-${remote_version2}.apk"
-                	if [ "${started}" = "1" ]; then
-                    		/etc/init.d/transmssion-serv start
-                	fi
-		else
-			einfo "Upgrade file downloading has failed."
-                	eend 1 "Cannot download ${pkg_name1} or ${pkg_name2} upgrade(s)"
-                	exit 1
-		fi
-	else
-		einfo "No upgrades available at the moment for ${pkg_name1} or ${pkg_name2}."
+		if [ "${started}" = "1" ]; then
+                	/etc/init.d/transmission-serv stop
+                fi
+        	apk --quiet --no-cache del ${pkg_name1}
+        	apk --quiet --no-cache del ${pkg_name2}
+        	apk --quiet --no-cache --repository "${pkg_repo}" add ${pkg_name1} ${pkg_name2}
+		if [ "${started}" = "1" ]; then
+                	/etc/init.d/transmission-serv start
+                fi
+        else
+            einfo "No upgrades available at the moment for ${pkg_name1} and ${pkg_name2}."
 	fi
     fi
 }
