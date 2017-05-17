@@ -90,7 +90,7 @@ validate_user() {
 
 upgrade() {
     if [ ! -x "${command_file}" ]; then
-        einfo "Executable ${command_file} is missing. (Re-)Installing ${pkg_name}"
+        einfo "${pkg_name} is not installed or broken. Re-installing ${pkg_name}"
         apk --quiet --no-cache del ${pkg_name}
         apk --quiet --no-cache --repository "${pkg_repo}" add ${pkg_name}
     else
