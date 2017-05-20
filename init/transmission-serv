@@ -165,7 +165,9 @@ start() {
 	einfo "Updating TRANSMISSION_BIND_ADDRESS_IPV4 to the ip of $IF_DEV : $IPADDR"
 	export TRANSMISSION_BIND_ADDRESS_IPV4=$IPADDR
 
-	dockerize -template /etc/transmission/settings.tmpl:config/settings.json /bin/true
+	if [ ! -f "${config_path}/settings.json" ]; then
+		dockerize -template /etc/transmission/settings.tmpl:${config_path}/settings.json /bin/true
+	fi
 
 	if [ ! -e "/dev/random" ]; then
 		einfo "/dev/random not found - symlink to /dev/urandom"
