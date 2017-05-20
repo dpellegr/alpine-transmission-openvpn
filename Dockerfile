@@ -83,10 +83,15 @@ ENV TRANSMISSION_WATCH_DIR_ENABLED="true"
 ENV TRANSMISSION_HOME="/config"
 ENV PYTHON_EGG_CACHE="/config/plugins/.python-eggs"
 
+RUN mkdir -p /data \
+ && mkdir -p /etc/openvpn
+
 # Volumes
 VOLUME /config
-VOLUME /data
-VOLUME /etc/openvpn
+VOLUME /data/downloads
+VOLUME /data/incomplete
+VOLUME /data/watch
+VOLUME /etc/openvpn/custom
 VOLUME /etc/scripts
 
 # Exposed ports
