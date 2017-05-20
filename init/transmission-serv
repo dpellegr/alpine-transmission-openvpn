@@ -167,6 +167,14 @@ start() {
 
 	if [ ! -f "${config_path}/settings.json" ]; then
 		dockerize -template /etc/transmission/settings.tmpl:${config_path}/settings.json /bin/true
+	else
+		oldip=$(cat "${config_path}/settings.json" |grep bind-address-ipv4)
+		lastch=${oldip:$((${#oldip}-1)):1}
+		if [ "${lastch}" = "," ]; then
+			oldip=$(echo -n "${oldip}" | head -c -1)
+		fi
+		newip="    \"bind-address-ipv4\": \"${IPADDR}\""
+		sed -i "s/${oldip}/${newip}/g" ${config_path}/settings.json
 	fi
 
 	if [ ! -e "/dev/random" ]; then
