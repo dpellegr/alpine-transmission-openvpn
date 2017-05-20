@@ -161,6 +161,10 @@ start() {
 
 	. /etc/transmission/environment-variables.sh
 
+	if [ -z "${IPADDR}" ]; then
+		IPADDR=$(echo `ifconfig tun0 2>/dev/null|awk '/inet addr:/ {print $2}'|sed 's/addr://'`)
+	fi
+
 	ebegin "Starting transmission daemon"
 	einfo "Updating TRANSMISSION_BIND_ADDRESS_IPV4 to the ip of $IF_DEV : $IPADDR"
 	export TRANSMISSION_BIND_ADDRESS_IPV4=$IPADDR
