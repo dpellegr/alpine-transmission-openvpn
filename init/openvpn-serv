@@ -189,7 +189,7 @@ start() {
 	auto_upgrade
 
 	checkconfig || return 1
-	validate_user
+	validate_user ${user_name} ${user_group}
 
 	local args="" reenter=${RE_ENTER:-no}
 	# If the config file does not specify the cd option, we do
