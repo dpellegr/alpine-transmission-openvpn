@@ -209,6 +209,7 @@ start() {
 	args="${args} --script-security 2"
 	args="${args} --up /etc/openvpn/transmission-up.sh"
 	args="${args} --down-pre --down /etc/openvpn/transmission-down.sh"
+	args="${args} --log /config/openvpn.log"
 
 	# Warn about the inability to change ip/route/dns information when
 	# dropping privs
@@ -222,8 +223,6 @@ start() {
 	[ -n "${PEER_DNS}" ] && args="${args} --setenv PEER_DNS ${PEER_DNS}"
 
 	[ "${reenter}" = "yes" ] && mark_service_inactive "${SVCNAME}"
-
-	#oma
 
 	# Persist transmission settings for use by transmission-daemon
 	dockerize -template /etc/transmission/environment-variables.tmpl:/etc/transmission/environment-variables.sh /bin/true
