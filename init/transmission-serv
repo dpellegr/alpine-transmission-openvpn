@@ -166,6 +166,11 @@ start() {
 		IPADDR=$(ifconfig ${IF_DEV} 2>/dev/null | awk '/inet addr:/ {print $2}' | sed "s/addr://")
 	fi
 
+	# Failsafe
+	if [ -z "${IPADDR}" ]; then
+		IPADDR="0.0.0.0"
+	fi
+	
 	ebegin "Starting transmission daemon"
 	einfo "Updating TRANSMISSION_BIND_ADDRESS_IPV4 to the ip of $IF_DEV : $IPADDR"
 	export TRANSMISSION_BIND_ADDRESS_IPV4=$IPADDR
