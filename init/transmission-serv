@@ -152,7 +152,7 @@ start() {
 
 	add_missing_path "${config_path}" "${user_name}" "${user_group}"
 	check_config
-	validate_user
+	validate_user ${user_name} ${user_group}
 
 	. /etc/transmission/environment-variables.sh
 
