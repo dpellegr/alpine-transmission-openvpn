@@ -162,7 +162,8 @@ start() {
 	. /etc/transmission/environment-variables.sh
 
 	if [ -z "${IPADDR}" ]; then
-		IPADDR=$(echo `ifconfig tun0 2>/dev/null|awk '/inet addr:/ {print $2}'|sed 's/addr://'`)
+		IF_DEV="tun0"
+		IPADDR=$(ifconfig ${IF_DEV} 2>/dev/null | awk '/inet addr:/ {print $2}' | sed "s/addr://")
 	fi
 
 	ebegin "Starting transmission daemon"
