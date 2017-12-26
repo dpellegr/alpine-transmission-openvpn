@@ -83,8 +83,8 @@ validate_user() {
         fi
         
         # Change ownerships
-        chown -R ${uid_name}:${gid_name} /config
-        chown ${uid_name}:${gid_name} /data
+        #chown -R ${uid_name}:${gid_name} /config
+        #chown ${uid_name}:${gid_name} /data
     fi
 }
 
