@@ -52,6 +52,8 @@
     "rpc-username": "{{ .Env.TRANSMISSION_RPC_USERNAME }}",
     "rpc-whitelist": "{{ .Env.TRANSMISSION_RPC_WHITELIST }}",
     "rpc-whitelist-enabled": {{ .Env.TRANSMISSION_RPC_WHITELIST_ENABLED }},
+    "rpc-host-whitelist": {{ .Env.TRANSMISSION_RPC_HOST_WHITELIST }},
+    "rpc-host-whitelist-enabled": {{ .Env.TRANSMISSION_RPC_HOST_WHITELIST_ENABLED }},
     "scrape-paused-torrents-enabled": {{ .Env.TRANSMISSION_SCRAPE_PAUSED_TORRENTS_ENABLED }},
     "script-torrent-done-enabled": {{ .Env.TRANSMISSION_SCRIPT_TORRENT_DONE_ENABLED }},
     "script-torrent-done-filename": "{{ .Env.TRANSMISSION_SCRIPT_TORRENT_DONE_FILENAME }}",
